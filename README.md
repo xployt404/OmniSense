@@ -76,7 +76,7 @@ The dashboard will be available at `http://localhost:8080`.
 OmniSense/
 ├── server.go             # Central Go Hub (Websocket logic & API)
 ├── index.html            # Web Dashboard (UI & Analytics)
-├── go.mod/go.sum         # Go dependencies
+├── go.mod/               # Go dependencies
 ├── icon/                 # SVG assets for the dashboard
 └── motionSensor/
     └── motionSensor.ino  # ESP8266 Firmware
