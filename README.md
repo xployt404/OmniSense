@@ -1,6 +1,6 @@
 # OmniSense: Advanced Perception Network
 
-OmniSense is a comprehensive security and motion monitoring ecosystem. It features a high-performance Go-based central hub, ESP8266-powered motion sensors, and a real-time web dashboard for visualization, analytics, and system management.
+OmniSense is a comprehensive security and motion monitoring system. It features a high-performance Go-based central hub, ESP8266-powered motion sensors, and a real-time web dashboard for visualization, analytics, and system management.
 
 ## 🚀 Features
 
