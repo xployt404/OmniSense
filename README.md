@@ -31,8 +31,7 @@ OmniSense is a comprehensive security and motion monitoring ecosystem. It featur
 - **Power:** 5V Micro-USB or external power supply
 
 ### Wiring Diagram
-> [!IMPORTANT]  
-> Insert your wiring diagram image here (e.g., `docs/wiring.png`).
+<img width="3000" height="2000" alt="image" src="/wiring.png" />
 
 **Pinout Configuration:**
 | Component | ESP8266 Pin | Notes |
