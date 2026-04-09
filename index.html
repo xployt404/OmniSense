@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omni Sense Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #f4f4f4;
+            --sidebar-color: #2c3e50;
+            --text-color: #333;
+            --card-bg: #fff;
+            --main-content-bg: #ecf0f1;
+            --accent-color: #3498db;
+        }
+
+        body.dark-mode {
+            --bg-color: #1a1a1a;
+            --sidebar-color: #000;
+            --text-color: #ecf0f1;
+            --card-bg: #2c3e50;
+            --main-content-bg: #121212;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Arial', sans-serif; background-color: var(--bg-color); color: var(--text-color); transition: background 0.3s, color 0.3s; }
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 250px; background-color: var(--sidebar-color); color: #ecf0f1; padding: 20px; }
+        .sidebar .logo { text-align: center; margin-bottom: 30px; }
+        .sidebar .logo h1 { font-size: 28px; letter-spacing: 1px; color: var(--accent-color); }
+        .sidebar .logo p { font-size: 10px; text-transform: uppercase; color: #95a5a6; margin-top: -5px; }
+        .sidebar nav ul { list-style: none; }
+        .sidebar nav ul li { margin: 15px 0; }
+        .sidebar nav ul li a { color: #ecf0f1; text-decoration: none; display: flex; align-items: center; cursor: pointer; }
+        .sidebar nav ul li a:hover, .sidebar nav ul li a.active { color: var(--accent-color); }
+        .sidebar nav ul li a i { margin-right: 10px; }
+        
+        .main-content { flex: 1; padding: 20px; background-color: var(--main-content-bg); overflow-y: auto; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        #connection-badge { padding: 5px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; color: white; background-color: #e74c3c; }
+        #connection-badge.connected { background-color: #2ecc71; }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
+        .card { border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1); text-align: center; color: #fff; background-color: var(--card-bg); }
+        #system-status-card { cursor: pointer; transition: transform 0.2s; }
+        #system-status-card:hover { transform: scale(1.02); }
+        .card:nth-child(1) { background-color: #e74c3c; }
+        .card.armed:nth-child(1) { background-color: #2ecc71; }
+        .card:nth-child(2) { background-color: #f1c40f; }
+        .card:nth-child(3) { background-color: #3498db; }
+        .card:nth-child(4) { color: var(--text-color); min-height: 300px; }
+
+        .status-container { display: flex; justify-content: flex-start; align-items: flex-start; gap: 25px; flex-wrap: wrap; padding: 10px; }
+        .sensor-status { display: flex; flex-direction: column; align-items: center; gap: 8px; width: 120px; }
+        .squircle { width: 70px; height: 70px; border-radius: 20%; background-color: #c5c5c5; display: flex; justify-content: center; align-items: center; transition: all 0.5s ease; position: relative; }
+        .room-icon { width: 35px; height: 35px; font-size: 30px; color: #555; }
+        .room-assign-select { width: 100%; font-size: 12px; margin-top: 5px; padding: 2px; border-radius: 4px; border: 1px solid #ccc; }
+        .sensor-id-label { font-size: 10px; color: #95a5a6; }
+        
+        #recent-activity-log { font-size: 14px; text-align: left; max-height: 120px; overflow-y: auto; color: white; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.05); border-radius: 4px; }
+        #recent-activity-log p { border-bottom: 1px solid rgba(0,0,0,0.1); padding: 2px 0; }
+        .log-alert { color: #e74c3c; font-weight: bold; }
+        .log-disconnect { color: #95a5a6; font-style: italic; }
+        .log-connect { color: #2ecc71; font-weight: bold; }
+
+        /* Analytics & Settings Styles */
+        .analytics-grid, .settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card, .setting-card { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); text-align: center; color: var(--text-color); }
+        .stat-card h4, .setting-card h4 { color: #7f8c8d; font-size: 12px; text-transform: uppercase; margin-bottom: 10px; }
+        .stat-card .value { font-size: 24px; font-weight: bold; }
+        
+        .charts-flex { display: flex; flex-direction: column; gap: 20px; }
+        .chart-container { background: var(--card-bg); padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .chart-row { display: flex; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .chart-label { width: 120px; font-size: 12px; text-align: right; }
+        .chart-bar-bg { flex: 1; height: 16px; background: rgba(0,0,0,0.1); border-radius: 8px; overflow: hidden; }
+        .chart-bar-fill { height: 100%; background: var(--accent-color); width: 0%; transition: width 0.5s ease; }
+        .chart-count { width: 30px; font-size: 12px; font-weight: bold; }
+
+        .hourly-chart { display: flex; align-items: flex-end; justify-content: space-between; height: 150px; padding-top: 20px; border-bottom: 2px solid rgba(0,0,0,0.1); margin-bottom: 10px; }
+        .hour-column { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; height: 100%; justify-content: flex-end; }
+        .hour-bar { width: 15px; background: var(--accent-color); border-radius: 3px 3px 0 0; transition: height 0.5s ease; min-height: 2px; }
+        .hour-label { font-size: 9px; color: #7f8c8d; transform: rotate(-45deg); height: 20px; }
+
+        /* Form Styles */
+        input[type="text"], input[type="number"], select {
+            padding: 8px; border-radius: 4px; border: 1px solid #ccc; width: 100%; margin-bottom: 10px; background: var(--card-bg); color: var(--text-color);
+        }
+        .btn { padding: 10px 20px; border-radius: 4px; border: none; background: var(--accent-color); color: white; cursor: pointer; font-weight: bold; }
+        .btn:hover { opacity: 0.9; }
+        .btn-danger { background: #e74c3c; }
+        .switch { position: relative; display: inline-block; width: 60px; height: 34px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 26px; width: 26px; left: 4px; bottom: 4px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--accent-color); }
+        input:checked + .slider:before { transform: translateX(26px); }
+    </style>
+</head>
+
+<body id="body">
+    <div class="container">
+        <aside class="sidebar">
+            <div class="logo">
+                <h1 id="sidebar-name">Omni Sense</h1>
+                <p>Advanced Perception Network</p>
+            </div>
+            <nav>
+                <ul>
+                    <li><a onclick="showView('dashboard')" id="nav-dashboard" class="active"><i class="fas fa-tachometer-alt"></i> Dashboard</a></li>
+                    <li><a onclick="showView('analytics')" id="nav-analytics"><i class="fas fa-chart-line"></i> Analytics</a></li>
+                    <li><a onclick="showView('settings')" id="nav-settings"><i class="fas fa-cogs"></i> Settings</a></li>
+                    <li><a href="#"><i class="fas fa-users"></i> Users</a></li>
+                    <li><a href="#"><i class="fas fa-sign-out-alt"></i> Logout</a></li>
+                </ul>
+            </nav>
+        </aside>
+        <main class="main-content">
+            <header>
+                <h2 id="view-title">Dashboard</h2>
+                <div class="user-info">
+                    <div id="connection-badge">DISCONNECTED</div>
+                    <span>Admin</span>
+                    <i class="fas fa-user-circle"></i>
+                </div>
+            </header>
+
+            <div id="view-dashboard" class="view-section active">
+                <section class="cards">
+                    <div class="card" id="system-status-card" onclick="toggleArm()">
+                        <h3>System Status</h3>
+                        <p id="system-status-text">disarmed</p>
+                        <small>Click to toggle</small>
+                    </div>
+                    <div class="card">
+                        <h3>Active Alerts</h3>
+                        <p id="alert-count">0</p>
+                    </div>
+                    <div class="card">
+                        <h3>Recent Activity</h3>
+                        <div id="recent-activity-log">
+                            <p>System Initialized</p>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3 style="margin-bottom: 20px">Sensors</h3>
+                        <div id="statusContainer" class="status-container"></div>
+                    </div>
+                </section>
+            </div>
+
+            <div id="view-analytics" class="view-section">
+                <div class="analytics-grid">
+                    <div class="stat-card"><h4>Total Motion</h4><div class="value" id="stat-total-events">0</div></div>
+                    <div class="stat-card"><h4>Security Alerts</h4><div class="value" id="stat-total-alerts" style="color: #e74c3c">0</div></div>
+                    <div class="stat-card"><h4>Armed Time</h4><div class="value" id="stat-armed-duration">0m</div></div>
+                    <div class="stat-card"><h4>Top Room</h4><div class="value" id="stat-top-room">-</div></div>
+                </div>
+                <div class="charts-flex">
+                    <div class="chart-container"><h3>Activity by Time of Day</h3><div id="hourly-chart" class="hourly-chart"></div></div>
+                    <div class="chart-container"><h3>Motion Events by Room</h3><div id="room-chart"></div></div>
+                </div>
+            </div>
+
+            <div id="view-settings" class="view-section">
+                <div class="settings-grid">
+                    <div class="setting-card">
+                        <h4>System Identity</h4>
+                        <label>System Name</label>
+                        <input type="text" id="setting-system-name" placeholder="Omni Sense">
+                        <button class="btn" onclick="saveSettings()">Apply Name</button>
+                    </div>
+                    <div class="setting-card">
+                        <h4>Alert Configuration</h4>
+                        <label>Alert Cooldown (seconds)</label>
+                        <input type="number" id="setting-alert-cooldown" value="5">
+                        <button class="btn" onclick="saveSettings()">Set Cooldown</button>
+                    </div>
+                    <div class="setting-card">
+                        <h4>UI Preferences</h4>
+                        <label>Dark Mode</label><br>
+                        <label class="switch">
+                            <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode()">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="setting-card">
+                        <h4>Data Management</h4>
+                        <label>Reset Analytics Data</label><br>
+                        <button class="btn btn-danger" onclick="resetAnalytics()">Factory Reset Stats</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        let socket;
+        let lastSensorIds = new Set();
+        let lastSensorStates = {}; 
+        let currentIsArmed = false;
+        let currentSettings = { systemName: "Omni Sense", alertCooldown: 5, maxLogEntries: 10 };
+        
+        const ROOMS = {
+            "living_room": { label: "Living Room", icon: "icon/couch-icon.svg" },
+            "bedroom": { label: "Bedroom", icon: "icon/bed-icon.svg" },
+            "bathroom": { label: "Bathroom", icon: "icon/bathtub-icon.svg" },
+            "kitchen": { label: "Kitchen", icon: "icon/kitchen-icon.svg" },
+            "makeup_room": { label: "Makeup Room", icon: "icon/brush-icon.svg" },
+            "entrance": { label: "Entrance", icon: "icon/door-icon.svg" }
+        };
+
+        function showView(viewName) {
+            document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+            document.querySelectorAll('.sidebar nav ul li a').forEach(a => a.classList.remove('active'));
+            document.getElementById(`view-${viewName}`).classList.add('active');
+            document.getElementById(`nav-${viewName}`).classList.add('active');
+            document.getElementById('view-title').innerText = viewName.charAt(0).toUpperCase() + viewName.slice(1);
+        }
+
+        function toggleDarkMode() {
+            document.getElementById('body').classList.toggle('dark-mode');
+        }
+
+        function logActivity(message, type = 'info') {
+            const p = document.createElement('p');
+            if (type === 'alert') p.className = 'log-alert';
+            if (type === 'disconnect') p.className = 'log-disconnect';
+            if (type === 'connect') p.className = 'log-connect';
+            const now = new Date().toLocaleTimeString();
+            let prefix = type === 'alert' ? '⚠️ ' : (type === 'disconnect' ? '🔌 ' : (type === 'connect' ? '✅ ' : ''));
+            p.innerText = `[${now}] ${prefix}${message}`;
+            const activityLog = document.getElementById('recent-activity-log');
+            activityLog.prepend(p);
+            while (activityLog.children.length > currentSettings.maxLogEntries) activityLog.removeChild(activityLog.lastChild);
+        }
+
+        function toggleArm() {
+            if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "toggle_arm" }));
+        }
+
+        function saveSettings() {
+            const newName = document.getElementById('setting-system-name').value || currentSettings.systemName;
+            const newCooldown = parseInt(document.getElementById('setting-alert-cooldown').value) || 5;
+            const updatedSettings = { ...currentSettings, systemName: newName, alertCooldown: newCooldown };
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: "update_settings", settings: updatedSettings }));
+            }
+        }
+
+        function resetAnalytics() {
+            if (confirm("Are you sure you want to reset all motion analytics? This cannot be undone.") && socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify({ type: "reset_analytics" }));
+            }
+        }
+
+        function assignRoom(sensorId, roomName) {
+            if (socket && socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify({ type: "assign_room", sensorId: sensorId, assignedRoom: roomName }));
+        }
+
+        function renderSensors(sensors, isArmed) {
+            const statusContainer = document.getElementById('statusContainer');
+            statusContainer.innerHTML = '';
+            sensors.forEach(sensor => {
+                const sensorDiv = document.createElement('div');
+                sensorDiv.className = 'sensor-status';
+                const roomInfo = ROOMS[sensor.assignedRoom];
+                const iconPath = roomInfo ? roomInfo.icon : null;
+                let bgColor = "#95a5a6", scale = "1.0";
+                if (isArmed) {
+                    if (sensor.status === "motion") { bgColor = "#e74c3c"; scale = "1.1"; }
+                    else if (sensor.status === "!motion") { bgColor = "#2ecc71"; }
+                }
+                let iconHtml = iconPath ? `<img src="${iconPath}" class="room-icon">` : `<i class="fas fa-microchip room-icon"></i>`;
+                sensorDiv.innerHTML = `<div class="squircle" style="background-color: ${bgColor}; transform: scale(${scale})">${iconHtml}</div><span class="sensor-id-label">${sensor.id}</span><select class="room-assign-select" onchange="assignRoom('${sensor.id}', this.value)"><option value="">Unassigned</option>${Object.keys(ROOMS).map(r => `<option value="${r}" ${sensor.assignedRoom === r ? 'selected' : ''}>${ROOMS[r].label}</option>`).join('')}</select>`;
+                statusContainer.appendChild(sensorDiv);
+            });
+        }
+
+        function updateAnalytics(data) {
+            document.getElementById('stat-total-events').innerText = data.totalMotionEvents;
+            document.getElementById('stat-total-alerts').innerText = data.totalAlerts;
+            document.getElementById('stat-armed-duration').innerText = Math.floor(data.armedDuration / 60) + "m";
+            let topRoom = "-", maxEvents = 0;
+            const roomChart = document.getElementById('room-chart');
+            roomChart.innerHTML = '';
+            const rooms = Object.entries(data.eventsByRoom).sort((a,b) => b[1] - a[1]);
+            if (rooms.length > 0) { topRoom = ROOMS[rooms[0][0]]?.label || rooms[0][0]; maxEvents = rooms[0][1]; }
+            document.getElementById('stat-top-room').innerText = topRoom;
+            rooms.forEach(([roomId, count]) => {
+                const percentage = maxEvents > 0 ? (count / maxEvents) * 100 : 0;
+                const label = ROOMS[roomId]?.label || roomId;
+                const row = document.createElement('div');
+                row.className = 'chart-row';
+                row.innerHTML = `<div class="chart-label">${label}</div><div class="chart-bar-bg"><div class="chart-bar-fill" style="width: ${percentage}%"></div></div><div class="chart-count">${count}</div>`;
+                roomChart.appendChild(row);
+            });
+            const hourlyChart = document.getElementById('hourly-chart');
+            hourlyChart.innerHTML = '';
+            const maxHour = Math.max(...data.hourlyActivity, 1);
+            data.hourlyActivity.forEach((count, hour) => {
+                const h = (count / maxHour) * 100;
+                const col = document.createElement('div');
+                col.className = 'hour-column';
+                col.innerHTML = `<div class="hour-bar" style="height: ${h}%" title="${count} events"></div><div class="hour-label">${hour}:00</div>`;
+                hourlyChart.appendChild(col);
+            });
+        }
+
+        function connectWebSocket() {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            socket = new WebSocket(`${protocol}//${window.location.hostname}:8080/?type=user`);
+            socket.onopen = () => {
+                document.getElementById('connection-badge').innerText = 'CONNECTED';
+                document.getElementById('connection-badge').classList.add('connected');
+                logActivity("Network established");
+            };
+            socket.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+                if (msg.type === "system_state") {
+                    const state = msg.data;
+                    currentSettings = state.settings;
+                    document.getElementById('sidebar-name').innerText = state.settings.systemName;
+                    document.title = state.settings.systemName + " Dashboard";
+                    document.getElementById('setting-system-name').value = state.settings.systemName;
+                    document.getElementById('setting-alert-cooldown').value = state.settings.alertCooldown;
+
+                    const currentIds = new Set(state.sensors.map(s => s.id));
+                    state.sensors.forEach(s => { if (!lastSensorIds.has(s.id)) logActivity(`Sensor ${s.id} detected`, 'connect'); });
+                    lastSensorIds.forEach(id => { if (!currentIds.has(id)) logActivity(`Sensor ${id} signal lost`, 'disconnect'); });
+                    lastSensorIds = currentIds;
+                    state.sensors.forEach(s => {
+                        if (s.status === "motion" && lastSensorStates[s.id] !== "motion") {
+                            const roomName = ROOMS[s.assignedRoom]?.label || s.assignedRoom || s.id;
+                            logActivity(state.isArmed ? `ALERT: Motion in ${roomName}` : `Motion detected in ${roomName}`, state.isArmed ? 'alert' : 'info');
+                        }
+                        lastSensorStates[s.id] = s.status;
+                    });
+                    if (state.isArmed !== currentIsArmed) logActivity(`Grid ${state.isArmed ? 'ARMED' : 'DISARMED'}`);
+                    currentIsArmed = state.isArmed;
+                    const systemStatusCard = document.getElementById('system-status-card');
+                    const systemStatusText = document.getElementById('system-status-text');
+                    if (state.isArmed) { systemStatusCard.classList.add('armed'); systemStatusText.innerText = 'ARMED'; }
+                    else { systemStatusCard.classList.remove('armed'); systemStatusText.innerText = 'disarmed'; }
+                    renderSensors(state.sensors, state.isArmed);
+                    updateAnalytics(state);
+                    document.getElementById('alert-count').innerText = state.isArmed ? state.sensors.filter(s => s.status === 'motion').length : 0;
+                }
+            };
+            socket.onclose = () => {
+                document.getElementById('connection-badge').innerText = 'DISCONNECTED';
+                document.getElementById('connection-badge').classList.remove('connected');
+                setTimeout(connectWebSocket, 2000);
+            };
+        }
+        connectWebSocket();
+    </script>
+</body>
+</html>
